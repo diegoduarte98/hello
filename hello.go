@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -26,6 +28,7 @@ func main() {
 			iniciarMonitoramento()
 		case 2:
 			fmt.Println("Exibindo logs...")
+			imprimeLogs()
 		case 0:
 			fmt.Println("Saindo do programa...")
 			os.Exit(0)
@@ -60,7 +63,7 @@ func leComando() int {
 
 func iniciarMonitoramento() {
 	fmt.Println("Monitorando...")
-	sites := leSitesDoArquivo() //[]string{"https://alura.com.br", "https://random-status-code.herokuapp.com", "https://caelum.com.br"}
+	sites := leSitesDoArquivo()
 
 	for i := 0; i < monitoramentos; i++ {
 		for i, site := range sites {
@@ -84,8 +87,10 @@ func testaSite(site string) {
 
 	if resp.StatusCode == 200 {
 		fmt.Println("O site", site, "esta OK")
+		registraLog(site, true)
 	} else {
 		fmt.Println("O", site, "retornou", resp.StatusCode, ":(")
+		registraLog(site, false)
 	}
 	fmt.Println("")
 }
@@ -115,4 +120,27 @@ func leSitesDoArquivo() []string {
 	arquivo.Close()
 
 	return sites
+}
+
+func registraLog(site string, status bool) {
+
+	arquivo, err := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+	if err != nil {
+		fmt.Println("Ocorreu o erro", err)
+	}
+
+	arquivo.WriteString(time.Now().Format("02/01/2006 15:04:05") + " - " + site + "- online: " + strconv.FormatBool(status) + "\n")
+
+	arquivo.Close()
+
+}
+
+func imprimeLogs() {
+	arquivo, err := ioutil.ReadFile("log.txt")
+	if err != nil {
+		fmt.Println("Ocorreu o erro", err)
+	}
+
+	fmt.Println(string(arquivo))
 }
